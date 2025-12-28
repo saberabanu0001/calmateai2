@@ -370,6 +370,7 @@ def contacts_api():
         return jsonify({
             'contacts_markdown': formatted_contacts_markdown
         })
+    
     except Exception as e:
         print(f"Error in contacts_api: {e}")
         return jsonify({'error': 'Failed to retrieve contacts.', 'details': str(e)}), 500
