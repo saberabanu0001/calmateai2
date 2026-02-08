@@ -134,20 +134,23 @@ def register_page():
 @app.route('/register_submit', methods=['POST'])
 def register_submit():
     """Handle registration form submission."""
-    data = request.get_json()
-    email = data.get('email')
-    name = data.get('name')
-    password = data.get('password')
-    if not email or not name or not password:
-        return jsonify({'success': False, 'message': 'Name, email, and password are required.'}), 400
-    users = get_registered_users()
-    if email in users:
-        return jsonify({'success': False, 'message': 'Email already registered'})
     try:
+        data = request.get_json() or {}
+        email = (data.get('email') or '').strip()
+        name = (data.get('name') or '').strip()
+        password = data.get('password') or ''
+        if not email or not name or not password:
+            return jsonify({'success': False, 'message': 'Name, email, and password are required.'}), 400
+        users = get_registered_users()
+        if email in users:
+            return jsonify({'success': False, 'message': 'Email already registered'})
         save_user(email, name, password)
+        return jsonify({'success': True, 'message': 'Registration successful!', 'redirect_url': url_for('login_page')})
     except ValueError as e:
         return jsonify({'success': False, 'message': str(e) or 'Email already registered'})
-    return jsonify({'success': True, 'message': 'Registration successful!', 'redirect_url': url_for('login_page')})
+    except Exception as e:
+        print(f"Registration error: {e}")
+        return jsonify({'success': False, 'message': f'Registration failed: {str(e)}'}), 200
 
 @app.route('/dashboard')
 def dashboard():
