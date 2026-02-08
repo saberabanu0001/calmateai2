@@ -1,2 +1,5 @@
 venv/
 .env
+*.db
+calmateai.db
+.env.local

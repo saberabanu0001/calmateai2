@@ -131,6 +131,7 @@ CalmMateAI/
 | `FLASK_SECRET_KEY` | Yes | Session encryption; use a long random string. |
 | `GROQ_API_KEY` | For AI chat | From [Groq Console](https://console.groq.com). Without it, built-in fallback responses are used. |
 | `PORT` | No | Server port (default 5001). |
+| `CONVEX_URL` | No | If set, user data is stored in [Convex](https://convex.dev) instead of SQLite. See [CONVEX_SETUP.md](CONVEX_SETUP.md). |
 
 ---
 

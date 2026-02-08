@@ -1,0 +1,24 @@
+{
+  "name": "calmateai",
+  "version": "1.0.0",
+  "description": "**Your personal well-being companion** — a web app that offers empathetic AI chat, seriousness detection, and quick access to mental health and crisis resources.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/saberabanu0001/NewCalmateAI.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/saberabanu0001/NewCalmateAI/issues"
+  },
+  "homepage": "https://github.com/saberabanu0001/NewCalmateAI#readme",
+  "dependencies": {
+    "convex": "^1.31.7"
+  }
+}

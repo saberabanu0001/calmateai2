@@ -1,6 +1,7 @@
 python-dotenv
 Flask
 gunicorn
+convex
 langchain
 langchain-community
 langchain-groq

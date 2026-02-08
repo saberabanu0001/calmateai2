@@ -19,29 +19,26 @@ from emergency_contacts import get_emergency_info_by_location, format_contacts_f
 from university_auth import authenticate_student, get_university_resources
 from voice_input import recognize_speech_from_audio
 
-# Simple user storage (in production, use a proper database)
-def get_registered_users():
-    """Get list of registered users."""
-    try:
-        with open('users.json', 'r') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return {}
-
-def get_user_name(email):
-    """Get user name by email."""
-    users = get_registered_users()
-    return users.get(email, {}).get('name', 'User')
-
-def save_user(email, name, password):
-    """Save new user registration."""
-    users = get_registered_users()
-    users[email] = {'name': name, 'password': password}  # In production, hash the password
-    with open('users.json', 'w') as f:
-        json.dump(users, f)
-
-# Load environment variables
+# Load .env before checking CONVEX_URL
 load_dotenv()
+
+# User storage: Convex if CONVEX_URL is set, else SQLite (database.py)
+if os.getenv("CONVEX_URL"):
+    from convex_db import (
+        get_registered_users,
+        get_user_name,
+        save_user,
+        check_password,
+        update_user,
+    )
+else:
+    from database import (
+        get_registered_users,
+        get_user_name,
+        save_user,
+        check_password,
+        update_user,
+    )
 
 # Set up the Flask application
 app = Flask(__name__)
@@ -123,8 +120,7 @@ def login_submit():
     data = request.get_json()
     email = data.get('email')
     password = data.get('password')
-    users = get_registered_users()
-    if email in users and users[email]['password'] == password:
+    if email and password and check_password(email, password):
         session['user_email'] = email
         return jsonify({'success': True, 'redirect_url': url_for('dashboard')})
     else:
@@ -147,7 +143,10 @@ def register_submit():
     users = get_registered_users()
     if email in users:
         return jsonify({'success': False, 'message': 'Email already registered'})
-    save_user(email, name, password)
+    try:
+        save_user(email, name, password)
+    except ValueError as e:
+        return jsonify({'success': False, 'message': str(e) or 'Email already registered'})
     return jsonify({'success': True, 'message': 'Registration successful!', 'redirect_url': url_for('login_page')})
 
 @app.route('/dashboard')
@@ -206,18 +205,9 @@ def profile_update():
     if not new_name:
         return jsonify({'success': False, 'message': 'Name is required'}), 400
     
-    users = get_registered_users()
-    if user_email not in users:
+    updated = update_user(user_email, new_name, new_password)
+    if not updated:
         return jsonify({'success': False, 'message': 'User not found'}), 404
-    
-    # Update user data
-    users[user_email]['name'] = new_name
-    if new_password:
-        users[user_email]['password'] = new_password
-    
-    # Save updated data
-    with open('users.json', 'w') as f:
-        json.dump(users, f)
     
     return jsonify({'success': True, 'message': 'Profile updated successfully'})
 
