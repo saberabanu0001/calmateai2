@@ -42,8 +42,8 @@
                        placeholder="Create a password">
             </div>
 
-            <button type="submit" 
-                    class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-indigo-600 hover:to-purple-700 transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+            <button type="submit" id="submit-btn"
+                    class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold py-3 px-4 rounded-lg hover:from-indigo-600 hover:to-purple-700 transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed">
                 Create Account
             </button>
         </form>
@@ -63,49 +63,75 @@
     </div>
 
     <script>
-        document.getElementById('register-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const formData = {
-                name: document.getElementById('name').value,
-                email: document.getElementById('email').value,
-                password: document.getElementById('password').value
-            };
+        const form = document.getElementById('register-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const messageDiv = document.getElementById('message');
 
-            try {
-                const response = await fetch('/register_submit', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(formData)
-                });
+        if (!form || !submitBtn) {
+            console.error('Register form or submit button not found');
+        } else {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
 
-                const data = await response.json();
-                const messageDiv = document.getElementById('message');
-                
-                if (data.success) {
-                    messageDiv.className = 'mt-4 text-center p-3 bg-green-100 text-green-700 rounded-lg';
-                    messageDiv.textContent = data.message;
-                    messageDiv.classList.remove('hidden');
-                    
-                    // Redirect to login page after successful registration
-                    setTimeout(() => {
-                        window.location.href = data.redirect_url;
-                    }, 2000);
-                } else {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Creating account...';
+                messageDiv.classList.add('hidden');
+
+                const formData = {
+                    name: document.getElementById('name').value.trim(),
+                    email: document.getElementById('email').value.trim(),
+                    password: document.getElementById('password').value
+                };
+
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 12000);
+                    const response = await fetch('/register_submit', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(formData),
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+
+                    let data;
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        data = await response.json();
+                    } else {
+                        const text = await response.text();
+                        console.error('Non-JSON response:', response.status, text.slice(0, 200));
+                        throw new Error('Server returned an error. Check that the app is running on this port.');
+                    }
+
+                    if (data.success) {
+                        messageDiv.className = 'mt-4 text-center p-3 bg-green-100 text-green-700 rounded-lg';
+                        messageDiv.textContent = data.message;
+                        messageDiv.classList.remove('hidden');
+                        setTimeout(function() {
+                            window.location.href = data.redirect_url || '/login';
+                        }, 1500);
+                    } else {
+                        messageDiv.className = 'mt-4 text-center p-3 bg-red-100 text-red-700 rounded-lg';
+                        messageDiv.textContent = data.message || 'Registration failed. Please try again.';
+                        messageDiv.classList.remove('hidden');
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Create Account';
+                    }
+                } catch (error) {
+                    console.error('Registration error:', error);
                     messageDiv.className = 'mt-4 text-center p-3 bg-red-100 text-red-700 rounded-lg';
-                    messageDiv.textContent = data.message;
+                    if (error.name === 'AbortError') {
+                        messageDiv.textContent = 'Request timed out. If you use Convex, try removing CONVEX_URL from .env to use local storage.';
+                    } else {
+                        messageDiv.textContent = error.message || 'An error occurred during registration. Please try again.';
+                    }
                     messageDiv.classList.remove('hidden');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Create Account';
                 }
-            } catch (error) {
-                console.error('Registration error:', error);
-                const messageDiv = document.getElementById('message');
-                messageDiv.className = 'mt-4 text-center p-3 bg-red-100 text-red-700 rounded-lg';
-                messageDiv.textContent = 'An error occurred during registration. Please try again.';
-                messageDiv.classList.remove('hidden');
-            }
-        });
+            });
+        }
     </script>
 </body>
 </html> 

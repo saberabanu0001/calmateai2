@@ -5,7 +5,7 @@ Uses the same interface as database.py so app.py can switch via CONVEX_URL.
 Requires: pip install convex python-dotenv, and a Convex project (convex/ + npx convex dev).
 """
 import os
-from werkzeug.security import generate_password_hash, check_password_hash
+from password_utils import hash_password, check_password as verify_password
 
 # Optional: use Convex only when CONVEX_URL is set
 _convex_client = None
@@ -47,7 +47,7 @@ def get_user_name(email):
 
 def save_user(email, name, password):
     """Register a new user. Password is hashed before sending to Convex."""
-    password_hash = generate_password_hash(password)
+    password_hash = hash_password(password)
     client = _get_client()
     try:
         client.mutation("users:create", {
@@ -66,7 +66,7 @@ def check_password(email, password):
     users = get_registered_users()
     if email not in users:
         return False
-    return check_password_hash(users[email]["password"], password)
+    return verify_password(users[email]["password"], password)
 
 
 def update_user(email, new_name, new_password=None):
@@ -77,6 +77,6 @@ def update_user(email, new_name, new_password=None):
     client = _get_client()
     args = {"email": email, "newName": new_name}
     if new_password is not None:
-        args["newPassword"] = generate_password_hash(new_password)
+        args["newPassword"] = hash_password(new_password)
     result = client.mutation("users:update", args)
     return result is not None

@@ -5,7 +5,7 @@ Uses hashed passwords; compatible with existing app routes.
 """
 import os
 import sqlite3
-from werkzeug.security import generate_password_hash, check_password_hash
+from password_utils import hash_password, check_password as verify_password
 
 # Database file path (in project root)
 DB_PATH = os.path.join(os.path.dirname(__file__), "calmateai.db")
@@ -68,7 +68,7 @@ def save_user(email, name, password):
     Raises if email already exists (caller should check first).
     """
     init_db()
-    password_hash = generate_password_hash(password)
+    password_hash = hash_password(password)
     conn = get_connection()
     try:
         conn.execute(
@@ -85,7 +85,7 @@ def check_password(email, password):
     users = get_registered_users()
     if email not in users:
         return False
-    return check_password_hash(users[email]["password"], password)
+    return verify_password(users[email]["password"], password)
 
 
 def update_user(email, new_name, new_password=None):
@@ -97,7 +97,7 @@ def update_user(email, new_name, new_password=None):
     conn = get_connection()
     try:
         if new_password:
-            password_hash = generate_password_hash(new_password)
+            password_hash = hash_password(new_password)
             conn.execute(
                 "UPDATE users SET name = ?, password = ? WHERE email = ?",
                 (new_name, password_hash, email),
