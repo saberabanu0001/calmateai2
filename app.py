@@ -19,8 +19,9 @@ from emergency_contacts import get_emergency_info_by_location, format_contacts_f
 from university_auth import authenticate_student, get_university_resources
 from voice_input import recognize_speech_from_audio
 
-# Load .env before checking CONVEX_URL
+# Load .env then .env.local (Convex CLI writes CONVEX_URL to .env.local)
 load_dotenv()
+load_dotenv(".env.local")
 
 # User storage: Convex if CONVEX_URL is set, else SQLite (database.py)
 if os.getenv("CONVEX_URL"):
