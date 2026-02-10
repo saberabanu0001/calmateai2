@@ -3,9 +3,6 @@
 import re
 import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
-from langchain_core.prompts import PromptTemplate
-from langchain.chains import LLMChain
-from langchain_groq import ChatGroq
 
 # Ensure NLTK data is downloaded
 try:
@@ -17,14 +14,14 @@ except nltk.downloader.DownloadError:
 # Initialize VADER sentiment analyzer
 analyzer = SentimentIntensityAnalyzer()
 
-def get_seriousness_level(user_input, qa_chain_for_llm_check):
+def get_seriousness_level(user_input, qa_chain_for_llm_check=None):
     """
     Analyzes the user's message to determine a seriousness level.
-    Uses keyword matching, sentiment analysis, and a final LLM check.
+    Uses keyword matching and sentiment analysis.
     
     Args:
         user_input (str): The text message from the user.
-        qa_chain_for_llm_check (LLMChain): A pre-initialized LangChain LLMChain object for the LLM check.
+        qa_chain_for_llm_check: (unused) kept for backward compatibility.
 
     Returns:
         str: The seriousness level ("Low", "Medium", "High", or "Emergency").
@@ -58,33 +55,6 @@ def get_seriousness_level(user_input, qa_chain_for_llm_check):
     if compound_score <= -0.5:
         return "Medium"
     
-    # --- LLM-based Nuance Check ---
-    # Only attempt this check if an LLM chain is provided
-    if compound_score < 0 and qa_chain_for_llm_check is not None and hasattr(qa_chain_for_llm_check, 'llm'):
-        llm_check_prompt = PromptTemplate.from_template(
-            "The user said: '{user_input}'. "
-            "Based on this, is their emotional state a 'Low' or 'Medium' level? "
-            "Respond with only 'Low' or 'Medium'."
-        )
-        
-        try:
-            # We need a temporary chain to invoke this specific prompt
-            llm_check_chain = LLMChain(llm=qa_chain_for_llm_check.llm, prompt=llm_check_prompt)
-            llm_response_obj = llm_check_chain.invoke({"user_input": user_input})
-            # Handle both old and new LangChain response formats
-            if hasattr(llm_response_obj, 'get'):
-                llm_response = llm_response_obj.get('text', '').strip().lower()
-            else:
-                llm_response = str(llm_response_obj).strip().lower()
-            
-            if "medium" in llm_response:
-                return "Medium"
-        except Exception as e:
-            print(f"Error during seriousness check LLM invocation: {e}")
-            # Fallback to keyword/sentiment if LLM check fails
-            if medium_keywords.search(user_input):
-                return "Medium"
-
     # --- Default Level ---
     # If none of the above conditions are met, default to 'Low'
     return "Low"
