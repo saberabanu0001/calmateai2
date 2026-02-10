@@ -4,15 +4,15 @@ import re
 import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
-# Ensure NLTK data is downloaded
+# Try to initialize VADER sentiment analyzer.
+# If the lexicon isn't available (e.g. on Render), we skip sentiment
+# and fall back to keyword-only rules instead of crashing.
 try:
-    nltk.data.find('sentiment/vader_lexicon.zip')
-except nltk.downloader.DownloadError:
-    print("Downloading NLTK VADER lexicon...")
-    nltk.download('vader_lexicon')
-
-# Initialize VADER sentiment analyzer
-analyzer = SentimentIntensityAnalyzer()
+    nltk.data.find("sentiment/vader_lexicon.zip")
+    analyzer = SentimentIntensityAnalyzer()
+except LookupError:
+    print("VADER lexicon not found; skipping sentiment analysis.")
+    analyzer = None
 
 def get_seriousness_level(user_input, qa_chain_for_llm_check=None):
     """
@@ -48,12 +48,13 @@ def get_seriousness_level(user_input, qa_chain_for_llm_check=None):
     
     # --- Sentiment Analysis (Nuance-based) ---
     # We only run this if the keywords didn't trigger a High or Emergency level
-    sentiment = analyzer.polarity_scores(user_input)
-    compound_score = sentiment['compound']
-    
-    # If the compound sentiment score is very negative, it might be a medium level
-    if compound_score <= -0.5:
-        return "Medium"
+    if analyzer is not None:
+        sentiment = analyzer.polarity_scores(user_input)
+        compound_score = sentiment["compound"]
+        
+        # If the compound sentiment score is very negative, it might be a medium level
+        if compound_score <= -0.5:
+            return "Medium"
     
     # --- Default Level ---
     # If none of the above conditions are met, default to 'Low'
