@@ -6,11 +6,8 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
-from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
-from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-import requests # Import the requests library
+import requests  # Import the requests library
 
 # Custom modules
 from seriousness_detector import get_seriousness_level
