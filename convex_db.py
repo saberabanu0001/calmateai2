@@ -19,11 +19,15 @@ def _get_client():
             url = os.getenv("CONVEX_URL")
             if not url:
                 raise ValueError("CONVEX_URL is not set")
+            print(f"Initializing Convex client with URL: {url}")
             _convex_client = ConvexClient(url)
+            print("Convex client initialized successfully")
         except Exception as e:
+            print(f"Failed to initialize Convex client: {e}")
+            print(f"CONVEX_URL={os.getenv('CONVEX_URL')}")
             raise RuntimeError(
-                "Convex not configured. Install: pip install convex. "
-                "Set CONVEX_URL in .env and run 'npx convex dev' to create the backend."
+                f"Convex not configured. CONVEX_URL={os.getenv('CONVEX_URL')}. "
+                "Install: pip install convex. Set CONVEX_URL in environment variables."
             ) from e
     return _convex_client
 
@@ -33,9 +37,14 @@ def get_registered_users():
     Return all users as { email: { 'name': str, 'password': str } }.
     Passwords in Convex are stored hashed; this returns the hash for check_password.
     """
-    client = _get_client()
-    rows = client.query("users:list")
-    return {r["email"]: {"name": r["name"], "password": r["password"]} for r in (rows or [])}
+    try:
+        client = _get_client()
+        rows = client.query("users:list")
+        return {r["email"]: {"name": r["name"], "password": r["password"]} for r in (rows or [])}
+    except Exception as e:
+        print(f"Convex get_registered_users error: {e}")
+        print(f"CONVEX_URL={os.getenv('CONVEX_URL')}")
+        raise RuntimeError(f"Failed to connect to Convex: {str(e)}") from e
 
 
 def get_user_name(email):
@@ -48,17 +57,21 @@ def get_user_name(email):
 def save_user(email, name, password):
     """Register a new user. Password is hashed before sending to Convex."""
     password_hash = hash_password(password)
-    client = _get_client()
     try:
+        client = _get_client()
+        print(f"Attempting to save user to Convex: {email}")
         client.mutation("users:create", {
             "email": email,
             "name": name,
             "password": password_hash,
         })
+        print(f"Successfully saved user to Convex: {email}")
     except Exception as e:
+        print(f"Convex save_user error: {e}")
+        print(f"CONVEX_URL={os.getenv('CONVEX_URL')}")
         if "already registered" in str(e).lower() or "unique" in str(e).lower():
             raise ValueError("Email already registered") from e
-        raise
+        raise RuntimeError(f"Failed to save user to Convex: {str(e)}") from e
 
 
 def check_password(email, password):
